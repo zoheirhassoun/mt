@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق متتبع المال - Supabase</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a0ca3;
+            --secondary: #4cc9f0;
+            --success: #2ec4b6;
+            --danger: #f72585;
+            --warning: #f8961e;
+            --dark: #212529;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --border: #dee2e6;
+            --card-bg: #ffffff;
+            --body-bg: #f0f4ff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: var(--body-bg);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo i {
+            font-size: 32px;
+            color: var(--primary);
+            background: rgba(67, 97, 238, 0.1);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .logo p {
+            font-size: 14px;
+            color: var(--gray);
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .nav-tab {
+            padding: 8px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: var(--light);
+            border: 1px solid var(--border);
+            color: var(--gray);
+        }
+        
+        .nav-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 8px rgba(67, 97, 238, 0.2);
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-radius: 20px;
+            background: rgba(67, 97, 238, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        .status-connected {
+            background: var(--success);
+        }
+        
+        .status-disconnected {
+            background: var(--danger);
+        }
+        
+        .status-connecting {
+            background: var(--warning);
+        }
+        
+        .connection-details {
+            flex: 1;
+        }
+        
+        .balance-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 20px;
+            padding: 30px;
+            color: white;
+            box-shadow: 0 10px 25px rgba(67, 97, 238, 0.25);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .balance-card::before {
+            content: "";
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .balance-card::after {
+            content: "";
+            position: absolute;
+            bottom: -30px;
+            left: -30px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .balance-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .balance-amount {
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 2;
+            letter-spacing: -1px;
+        }
+        
+        .balance-stats {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .income, .expense {
+            text-align: center;
+            padding: 0 15px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .stat-amount {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .income .stat-amount {
+            color: var(--secondary);
+        }
+        
+        .expense .stat-amount {
+            color: #ffafcc;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease;
+        }
+        
+        .panel:hover {
+            transform: translateY(-5px);
+        }
+        
+        .panel-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--primary);
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--light);
+            padding: 5px;
+            border-radius: 50px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            text-align: center;
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 8px rgba(67, 97, 238, 0.2);
+        }
+        
+        .transaction-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+        
+        .form-group {
+            margin-bottom: 18px;
+        }
+        
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--gray);
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            background: var(--light);
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+        }
+        
+        .btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25);
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(67, 97, 238, 0.35);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-outline:hover {
+            background: rgba(67, 97, 238, 0.08);
+            transform: translateY(-3px);
+        }
+        
+        .transactions-list {
+            max-height: 450px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .transactions-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .transactions-list::-webkit-scrollbar-track {
+            background: var(--light);
+            border-radius: 4px;
+        }
+        
+        .transactions-list::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px;
+            border-radius: 15px;
+            margin-bottom: 12px;
+            background: var(--light);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .transaction-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+        
+        .transaction-info {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        
+        .transaction-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .income-icon {
+            background: rgba(76, 201, 240, 0.15);
+            color: var(--secondary);
+        }
+        
+        .expense-icon {
+            background: rgba(247, 37, 133, 0.15);
+            color: var(--danger);
+        }
+        
+        .transaction-details {
+            flex: 1;
+        }
+        
+        .transaction-details h4 {
+            font-size: 17px;
+            margin-bottom: 6px;
+            color: var(--dark);
+        }
+        
+        .transaction-details p {
+            font-size: 14px;
+            color: var(--gray);
+            display: flex;
+            gap: 12px;
+        }
+        
+        .transaction-amount {
+            font-weight: 700;
+            font-size: 19px;
+            min-width: 100px;
+            text-align: right;
+        }
+        
+        .income-amount {
+            color: var(--secondary);
+        }
+        
+        .expense-amount {
+            color: var(--danger);
+        }
+        
+        .chart-container {
+            height: 320px;
+            margin-top: 20px;
+        }
+        
+        .budget-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+        
+        .budget-item {
+            background: var(--light);
+            border-radius: 15px;
+            padding: 18px;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .budget-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+        
+        .budget-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .budget-title {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .budget-amount {
+            font-weight: 700;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress {
+            height: 100%;
+            border-radius: 5px;
+        }
+        
+        .progress-food {
+            background: var(--secondary);
+        }
+        
+        .progress-transport {
+            background: var(--primary);
+        }
+        
+        .progress-shopping {
+            background: var(--warning);
+        }
+        
+        .progress-bills {
+            background: var(--danger);
+        }
+        
+        .progress-entertainment {
+            background: #7209b7;
+        }
+        
+        .progress-health {
+            background: var(--success);
+        }
+        
+        .budget-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--gray);
+            font-weight: 500;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--gray);
+        }
+        
+        .empty-state i {
+            font-size: 52px;
+            margin-bottom: 20px;
+            opacity: 0.2;
+        }
+        
+        .empty-state p {
+            font-size: 17px;
+            margin-bottom: 10px;
+        }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .stat-card i {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: var(--primary);
+            background: rgba(67, 97, 238, 0.1);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stat-card h3 {
+            font-size: 32px;
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-weight: 800;
+        }
+        
+        .stat-card p {
+            color: var(--gray);
+            font-weight: 500;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 10px 18px;
+            border-radius: 20px;
+            background: var(--light);
+            border: 1px solid var(--border);
+            color: var(--gray);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 8px rgba(67, 97, 238, 0.2);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(3px);
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+            position: relative;
+            animation: modalOpen 0.4s ease;
+        }
+        
+        @keyframes modalOpen {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--gray);
+            transition: all 0.3s ease;
+        }
+        
+        .close-modal:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+        
+        .modal-title {
+            margin-bottom: 25px;
+            color: var(--primary);
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .modal-form .form-group {
+            margin-bottom: 22px;
+        }
+        
+        .insights {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 25px;
+        }
+        
+        .insight-card {
+            background: var(--light);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .insight-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .insight-card h4 {
+            margin-bottom: 12px;
+            color: var(--gray);
+            font-weight: 500;
+        }
+        
+        .insight-card p {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--gray);
+            font-size: 14px;
+            margin-top: 40px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .test-result {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-radius: 10px;
+            background: var(--light);
+            margin-bottom: 8px;
+        }
+        
+        .status-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+        
+        .success .status-icon {
+            background: var(--success);
+            color: white;
+        }
+        
+        .error .status-icon {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .test-description {
+            flex: 1;
+        }
+        
+        .fixed-buttons {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .fixed-buttons:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-wallet"></i>
+                <div>
+                    <h1>تطبيق متتبع المال</h1>
+                    <p>الإصدار المصحح</p>
+                </div>
+            </div>
+            
+            <div class="nav-tabs">
+                <div class="nav-tab active">الرئيسية</div>
+                <div class="nav-tab">المعاملات</div>
+                <div class="nav-tab">التقارير</div>
+                <div class="nav-tab">الميزانية</div>
+                <div class="nav-tab">الإعدادات</div>
+            </div>
+        </header>
+        
+        <div class="connection-status" id="connection-status">
+            <div class="status-indicator status-connecting" id="status-indicator"></div>
+            <div class="connection-details">
+                <strong id="status-text">جاري محاولة الاتصال بـ Supabase...</strong>
+                <p id="status-details">الرجاء الانتظار</p>
+            </div>
+        </div>
+        
+        <div class="balance-card">
+            <div class="balance-title">رصيدك الحالي</div>
+            <div class="balance-amount" id="balance-amount">0.00 ريال</div>
+            <div class="balance-stats">
+                <div class="income">
+                    <div class="stat-label">إجمالي الدخل</div>
+                    <div class="stat-amount" id="income-amount">0.00 ريال</div>
+                </div>
+                <div class="expense">
+                    <div class="stat-label">إجمالي المصروفات</div>
+                    <div class="stat-amount" id="expense-amount">0.00 ريال</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-cards">
+            <div class="stat-card">
+                <i class="fas fa-piggy-bank"></i>
+                <h3>0 ريال</h3>
+                <p>الادخارات</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-chart-line"></i>
+                <h3>0%</h3>
+                <p>نمو شهري</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-bullseye"></i>
+                <h3>0%</h3>
+                <p>تحقيق أهداف الميزانية</p>
+            </div>
+        </div>
+        
+        <div class="app-container">
+            <div class="panel">
+                <div class="panel-title">
+                    <span>إضافة معاملة جديدة</span>
+                    <i class="fas fa-plus-circle"></i>
+                </div>
+                
+                <div class="tabs">
+                    <div class="tab active" data-type="expense">مصروف</div>
+                    <div class="tab" data-type="income">دخل</div>
+                </div>
+                
+                <form class="transaction-form" id="transaction-form">
+                    <div class="form-group">
+                        <label for="amount"><i class="fas fa-riyal-sign"></i> المبلغ</label>
+                        <input type="number" id="amount" placeholder="0.00" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category"><i class="fas fa-tag"></i> الفئة</label>
+                        <select id="category" required>
+                            <!-- سيتم توليد الخيارات ديناميكياً -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="wallet"><i class="fas fa-wallet"></i> المحفظة</label>
+                        <select id="wallet" required>
+                            <option value="">اختر المحفظة</option>
+                            <option value="cash">نقدي</option>
+                            <option value="bank">حساب بنكي</option>
+                            <option value="credit">بطاقة ائتمان</option>
+                            <option value="savings">ادخار</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="date"><i class="fas fa-calendar"></i> التاريخ</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="description"><i class="fas fa-comment"></i> الوصف</label>
+                        <input type="text" id="description" placeholder="أضف ملاحظة حول هذه المعاملة">
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> إضافة معاملة
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="insights">
+                    <div class="insight-card">
+                        <h4>متوسط الإنفاق اليومي</h4>
+                        <p>0.00 ريال</p>
+                    </div>
+                    <div class="insight-card">
+                        <h4>أكبر مصروف</h4>
+                        <p>0.00 ريال</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">
+                    <span>المعاملات الحديثة</span>
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                
+                <div class="filters">
+                    <div class="filter-btn active" data-filter="all">الكل</div>
+                    <div class="filter-btn" data-filter="income">دخل</div>
+                    <div class="filter-btn" data-filter="expense">مصروف</div>
+                    <div class="filter-btn" data-filter="last7">آخر 7 أيام</div>
+                    <div class="filter-btn" data-filter="month">هذا الشهر</div>
+                </div>
+                
+                <div class="transactions-list" id="transactions-list">
+                    <!-- Transactions will be added here dynamically -->
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-outline" id="export-btn">
+                        <i class="fas fa-file-export"></i> تصدير البيانات
+                    </button>
+                    <button class="btn btn-outline" id="refresh-btn">
+                        <i class="fas fa-sync"></i> تحديث
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">
+                    <span>تحليل الإنفاق</span>
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="expense-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">
+                    <span>الميزانية الشهرية</span>
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                
+                <div class="filters budget-month-filters" style="margin-bottom: 25px;">
+                    <!-- سيتم توليد أزرار الشهور ديناميكياً -->
+                </div>
+                
+                <div class="budget-container">
+                    <!-- Budget items will be added here dynamically -->
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-outline" id="edit-budget-btn">
+                        <i class="fas fa-edit"></i> تعديل الميزانية
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">
+                    <span>اختبار الصلاحيات</span>
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-success" id="test-rls-btn">
+                        <i class="fas fa-shield-alt"></i> اختبار سياسات الصلاحيات
+                    </button>
+                    <button class="btn btn-outline" id="detailed-check-btn">
+                        <i class="fas fa-search"></i> فحص مفصل
+                    </button>
+                </div>
+                
+                <div id="permission-results" style="margin-top: 20px;">
+                    <!-- نتائج اختبار الصلاحيات ستظهر هنا -->
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">
+                    <span>سجل الأخطاء</span>
+                    <i class="fas fa-bug"></i>
+                </div>
+                
+                <div id="error-log" style="height: 300px; overflow-y: auto; background: #f8f9fa; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 14px;">
+                    <!-- سجل الأخطاء سيظهر هنا -->
+                </div>
+                
+                <div class="action-buttons" style="margin-top: 20px;">
+                    <button class="btn btn-danger" id="clear-log-btn">
+                        <i class="fas fa-trash"></i> مسح السجل
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>تطبيق متتبع المال - الإصدار المصحح &copy; 2023 | تم إصلاح جميع مشاكل الاتصال</p>
+        </div>
+    </div>
+
+    <!-- Edit Budget Modal -->
+    <div class="modal" id="budget-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-modal">&times;</span>
+            <h2 class="modal-title">تعديل فئات الميزانية</h2>
+            <form class="modal-form" id="budget-form">
+                <div class="form-group">
+                    <label>طعام ومأكولات (ريال)</label>
+                    <input type="number" value="0" step="1" id="food-budget">
+                </div>
+                <div class="form-group">
+                    <label>مواصلات (ريال)</label>
+                    <input type="number" value="0" step="1" id="transport-budget">
+                </div>
+                <div class="form-group">
+                    <label>تسوق (ريال)</label>
+                    <input type="number" value="0" step="1" id="shopping-budget">
+                </div>
+                <div class="form-group">
+                    <label>فواتير وخدمات (ريال)</label>
+                    <input type="number" value="0" step="1" id="bills-budget">
+                </div>
+                <div class="form-group">
+                    <label>ترفيه (ريال)</label>
+                    <input type="number" value="0" step="1" id="entertainment-budget">
+                </div>
+                <div class="form-group">
+                    <label>صحة ولياقة (ريال)</label>
+                    <input type="number" value="0" step="1" id="health-budget">
+                </div>
+                <button type="button" class="btn btn-primary" style="width: 100%; margin-top: 15px;" id="save-budget-btn">
+                    <i class="fas fa-save"></i> حفظ التعديلات
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Transaction Modal -->
+    <div class="modal" id="edit-transaction-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-edit-modal">&times;</span>
+            <h2 class="modal-title">تعديل المعاملة</h2>
+            <form class="modal-form" id="edit-transaction-form">
+                <div class="form-group">
+                    <label>المبلغ</label>
+                    <input type="number" id="edit-amount" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>الفئة</label>
+                    <select id="edit-category" required>
+                        <option value="food">طعام ومأكولات</option>
+                        <option value="transport">مواصلات</option>
+                        <option value="shopping">تسوق</option>
+                        <option value="bills">فواتير وخدمات</option>
+                        <option value="entertainment">ترفيه</option>
+                        <option value="health">صحة ولياقة</option>
+                        <option value="salary">راتب</option>
+                        <option value="freelance">عمل حر</option>
+                        <option value="investment">استثمار</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>المحفظة</label>
+                    <select id="edit-wallet" required>
+                        <option value="cash">نقدي</option>
+                        <option value="bank">حساب بنكي</option>
+                        <option value="credit">بطاقة ائتمان</option>
+                        <option value="savings">ادخار</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>التاريخ</label>
+                    <input type="date" id="edit-date" required>
+                </div>
+                <div class="form-group">
+                    <label>الوصف</label>
+                    <input type="text" id="edit-description">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
+                    <i class="fas fa-save"></i> حفظ التعديلات
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal إضافة فئة جديدة للمعاملة -->
+    <div id="add-category-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus-circle"></i> إضافة فئة جديدة</h3>
+                <button id="close-add-category-modal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="add-category-form" class="budget-form">
+                <div class="form-group">
+                    <label for="new-category-name">اسم الفئة الجديدة:</label>
+                    <input type="text" id="new-category-name" placeholder="مثال: تعليم، سفر، إصلاحات" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancel-category-btn" class="btn btn-secondary"><i class="fas fa-times"></i> إلغاء</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> حفظ الفئة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+        <script>
+        // إعداد الاتصال بـ Supabase
+        const SUPABASE_URL = 'https://hdjnjmidodeooggqxkip.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhkam5qbWlkb2Rlb29nZ3F4a2lwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0MzI4NzYsImV4cCI6MjA2ODAwODg3Nn0.VsmDaRODB7uI0apbMCNsXylHUhXcyr34vMKe-rZHzpA';
+        
+        // تحديث حالة الاتصال
+        function updateConnectionStatus(status, message, details = '') {
+            const indicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+            const statusDetails = document.getElementById('status-details');
+            
+            // إذا لم تكن العناصر موجودة، استخدم console.log بدلاً من ذلك
+            if (!indicator || !statusText || !statusDetails) {
+                console.log(`حالة الاتصال: ${status} - ${message} - ${details}`);
+                return;
+            }
+            
+            indicator.className = 'status-indicator';
+            
+            if (status === 'connected') {
+                indicator.classList.add('status-connected');
+                statusText.textContent = 'متصل بـ Supabase بنجاح';
+                statusDetails.textContent = message || 'الاتصال يعمل بشكل صحيح';
+            } else if (status === 'disconnected') {
+                indicator.classList.add('status-disconnected');
+                statusText.textContent = 'فشل الاتصال بـ Supabase';
+                statusDetails.textContent = message || 'يرجى التحقق من الإعدادات';
+            } else {
+                indicator.classList.add('status-connecting');
+                statusText.textContent = message || 'جاري محاولة الاتصال...';
+                statusDetails.textContent = details || '';
+            }
+        }
+        
+        // بيانات التطبيق
+        let transactions = [];
+        let budgets = {};
+        let supabase;
+        let errorLog = [];
+
+        // تسجيل الأخطاء
+        function logError(message, error) {
+            const timestamp = new Date().toLocaleTimeString();
+            let errorDetails = '';
+            
+            if (error) {
+                errorDetails = `[${error.code || 'N/A'}] ${error.message}`;
+            }
+            
+            const logEntry = {
+                timestamp,
+                message,
+                error: errorDetails
+            };
+            
+            errorLog.unshift(logEntry);
+            renderErrorLog();
+        }
+
+        // عرض سجل الأخطاء
+        function renderErrorLog() {
+            const container = document.getElementById('error-log');
+            if (!container) {
+                // إذا لم يكن العنصر موجود، اطبع الأخطاء في console
+                console.log('سجل الأخطاء:', errorLog);
+                return;
+            }
+            
+            container.innerHTML = errorLog.map(entry => `
+                <div style="margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <strong style="color: #f72585;">${entry.message}</strong>
+                        <span style="color: #6c757d; font-size: 12px;">${entry.timestamp}</span>
+                    </div>
+                    ${entry.error ? `<div style="color: #495057; font-size: 13px; margin-top: 5px;">${entry.error}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // تهيئة Supabase
+        async function initializeSupabaseClient() {
+            try {
+                
+                // إنشاء العميل
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // اختبار الاتصال
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .select('*')
+                    .limit(1);
+                
+                if (error) {
+                    console.error('خطأ في اختبار الاتصال:', error);
+                    logError('فشل في الاتصال بـ Supabase', error);
+                    updateConnectionStatus('disconnected', 'فشل في الاتصال بـ Supabase', error.message);
+                    return false;
+                }
+                
+                console.log('تم تهيئة Supabase بنجاح');
+                updateConnectionStatus('connected', 'الاتصال ناجح!', `تم جلب ${data?.length || 0} معاملة`);
+                return true;
+            } catch (error) {
+                console.error('خطأ في تهيئة Supabase:', error);
+                logError('خطأ غير متوقع في الاتصال', error);
+                updateConnectionStatus('disconnected', 'خطأ غير متوقع', error.message);
+                return false;
+            }
+        }
+
+        // جلب المعاملات
+        async function fetchTransactions() {
+            try {
+                if (!supabase) {
+                    console.error('Supabase غير مهيأ');
+                    showNotification('Supabase غير مهيأ، يرجى الانتظار...', 'danger');
+                    return [];
+                }
+                
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .select('*')
+                    .order('date', { ascending: false });
+                
+                if (error) {
+                    console.error('خطأ في جلب المعاملات:', error);
+                    logError('خطأ في جلب المعاملات', error);
+                    showNotification('خطأ في جلب المعاملات من Supabase', 'danger');
+                    return [];
+                }
+                
+                console.log('تم جلب المعاملات:', data);
+                return data || [];
+            } catch (error) {
+                console.error('خطأ في fetchTransactions:', error);
+                logError('خطأ في جلب البيانات', error);
+                return [];
+            }
+        }
+
+        // تنظيف البيانات قبل الإرسال
+        function cleanTransactionData(transaction) {
+            return {
+                type: String(transaction.type || 'expense'),
+                amount: parseFloat(transaction.amount) || 0,
+                category: String(transaction.category || ''),
+                wallet: String(transaction.wallet || ''),
+                date: transaction.date ? new Date(transaction.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                description: String(transaction.description || '')
+            };
+        }
+
+        // إضافة معاملة
+        async function addTransactionSupabase(transaction) {
+            try {
+                if (!supabase) {
+                    console.error('Supabase غير مهيأ');
+                    showNotification('Supabase غير مهيأ، يرجى الانتظار...', 'danger');
+                    return null;
+                }
+                
+                // تنظيف البيانات قبل الإرسال
+                const cleanedTransaction = cleanTransactionData(transaction);
+                console.log('إرسال المعاملة إلى Supabase:', cleanedTransaction);
+                
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .insert([cleanedTransaction])
+                    .select();
+                
+                if (error) {
+                    console.error('خطأ في إضافة المعاملة:', error);
+                    logError('خطأ في إضافة المعاملة', error);
+                    
+                    // رسائل خطأ أكثر تفصيلاً
+                    if (error.code === '42501') {
+                        showNotification('خطأ في الصلاحيات: يرجى التحقق من إعدادات RLS في Supabase', 'danger');
+                    } else if (error.code === '42P01') {
+                        showNotification('جدول المعاملات غير موجود، يرجى إنشاء الجداول أولاً', 'danger');
+                    } else {
+                        showNotification(`خطأ في إضافة المعاملة: ${error.message}`, 'danger');
+                    }
+                    return null;
+                }
+                
+                console.log('تم إضافة المعاملة بنجاح:', data);
+                return data[0];
+            } catch (error) {
+                console.error('خطأ في addTransactionSupabase:', error);
+                logError('خطأ غير متوقع في الإضافة', error);
+                showNotification('خطأ غير متوقع في إضافة المعاملة', 'danger');
+                return null;
+            }
+        }
+
+        // اختبار سياسات الصلاحيات
+        async function testRLSPolicies() {
+            try {
+                if (!supabase) {
+                    showNotification('Supabase غير مهيأ', 'danger');
+                    return;
+                }
+                
+                const resultsContainer = document.getElementById('permission-results');
+                if (!resultsContainer) {
+                    console.log('عنصر نتائج الصلاحيات غير موجود، سيتم عرض النتائج في console');
+                    // اختبار بسيط بدون واجهة
+                    const { data, error } = await supabase.from('transactions').select('*').limit(1);
+                    if (error) {
+                        console.error('خطأ في اختبار الصلاحيات:', error);
+                        showNotification(`خطأ في الصلاحيات: ${error.message}`, 'danger');
+                    } else {
+                        console.log('اختبار الصلاحيات ناجح:', data);
+                        showNotification('اختبار الصلاحيات ناجح', 'success');
+                    }
+                    return;
+                }
+                
+                resultsContainer.innerHTML = '';
+                
+                // اختبار قراءة البيانات
+                const readTest = document.createElement('div');
+                readTest.className = 'test-result';
+                readTest.innerHTML = `
+                    <div class="status-icon"><i class="fas fa-sync fa-spin"></i></div>
+                    <div class="test-description">
+                        <strong>اختبار صلاحية القراءة (SELECT)...</strong>
+                    </div>
+                `;
+                resultsContainer.appendChild(readTest);
+                
+                const { data: readData, error: readError } = await supabase
+                    .from('transactions')
+                    .select('*')
+                    .limit(1);
+                
+                if (readError) {
+                    readTest.className = 'test-result error';
+                    readTest.innerHTML = `
+                        <div class="status-icon"><i class="fas fa-times"></i></div>
+                        <div class="test-description">
+                            <strong>فشل في صلاحية القراءة!</strong>
+                            <p>${readError.message}</p>
+                            <p>يجب إنشاء سياسة: CREATE POLICY "Enable read access" ON transactions FOR SELECT USING (true);</p>
+                        </div>
+                    `;
+                } else {
+                    readTest.className = 'test-result success';
+                    readTest.innerHTML = `
+                        <div class="status-icon"><i class="fas fa-check"></i></div>
+                        <div class="test-description">
+                            <strong>صلاحية القراءة تعمل بنجاح!</strong>
+                            <p>تم جلب ${readData?.length || 0} سجلات</p>
+                        </div>
+                    `;
+                }
+                
+                // اختبار إضافة البيانات
+                const insertTest = document.createElement('div');
+                insertTest.className = 'test-result';
+                insertTest.innerHTML = `
+                    <div class="status-icon"><i class="fas fa-sync fa-spin"></i></div>
+                    <div class="test-description">
+                        <strong>اختبار صلاحية الإضافة (INSERT)...</strong>
+                    </div>
+                `;
+                resultsContainer.appendChild(insertTest);
+                
+                const testTransaction = {
+                    type: 'expense',
+                    amount: 1.00,
+                    category: 'test',
+                    wallet: 'test',
+                    date: new Date().toISOString().split('T')[0],
+                    description: 'اختبار الصلاحيات'
+                };
+                
+                const { error: insertError } = await supabase
+                    .from('transactions')
+                    .insert([testTransaction]);
+                
+                if (insertError) {
+                    insertTest.className = 'test-result error';
+                    insertTest.innerHTML = `
+                        <div class="status-icon"><i class="fas fa-times"></i></div>
+                        <div class="test-description">
+                            <strong>فشل في صلاحية الإضافة!</strong>
+                            <p>${insertError.message}</p>
+                            <p>يجب إنشاء سياسة: CREATE POLICY "Enable insert access" ON transactions FOR INSERT TO authenticated WITH CHECK (true);</p>
+                        </div>
+                    `;
+                } else {
+                    insertTest.className = 'test-result success';
+                    insertTest.innerHTML = `
+                        <div class="status-icon"><i class="fas fa-check"></i></div>
+                        <div class="test-description">
+                            <strong>صلاحية الإضافة تعمل بنجاح!</strong>
+                            <p>تمت إضافة معاملة اختبارية</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('خطأ في اختبار الصلاحيات:', error);
+                logError('خطأ في اختبار الصلاحيات', error);
+            }
+        }
+
+        // جلب الميزانية
+        async function fetchBudgets() {
+            try {
+                if (!supabase) {
+                    console.error('Supabase غير مهيأ');
+                    return {};
+                }
+                
+                const { data, error } = await supabase
+                    .from('budgets')
+                    .select('*');
+                
+                if (error) {
+                    console.error('خطأ في جلب الميزانية:', error);
+                    logError('خطأ في جلب الميزانية', error);
+                    showNotification('خطأ في جلب الميزانية من Supabase', 'danger');
+                    return {};
+                }
+                
+                const budgetsObj = {};
+                if (data && Array.isArray(data)) {
+                    data.forEach(b => {
+                        if (b.category && typeof b.amount === 'number') {
+                            budgetsObj[b.category] = b.amount;
+                        }
+                    });
+                }
+                console.log('تم جلب الميزانية:', budgetsObj);
+                return budgetsObj;
+            } catch (error) {
+                console.error('خطأ في fetchBudgets:', error);
+                logError('خطأ في جلب الميزانية', error);
+                return {};
+            }
+        }
+
+        // تنظيف بيانات الميزانية
+        function cleanBudgetData(budgets) {
+            const cleaned = {};
+            Object.entries(budgets).forEach(([category, amount]) => {
+                if (category && typeof category === 'string') {
+                    cleaned[category] = parseFloat(amount) || 0;
+                }
+            });
+            return cleaned;
+        }
+
+        // تحديث الميزانية
+        async function updateBudgetsSupabase(budgets) {
+            try {
+                if (!supabase) {
+                    console.error('Supabase غير مهيأ');
+                    return false;
+                }
+                
+                // تنظيف البيانات
+                const cleanedBudgets = cleanBudgetData(budgets);
+                console.log('تحديث الميزانية:', cleanedBudgets);
+                
+                // حذف كل الميزانيات القديمة
+                const { error: deleteError } = await supabase.from('budgets').delete().neq('id', 0);
+                
+                if (deleteError) {
+                    console.error('خطأ في حذف الميزانيات القديمة:', deleteError);
+                    logError('خطأ في حذف الميزانيات القديمة', deleteError);
+                }
+                
+                // إضافة الميزانيات الجديدة - بدون created_at
+                const rows = Object.entries(cleanedBudgets).map(([category, amount]) => ({ 
+                    category: category, 
+                    amount: amount
+                    // لا نضيف created_at - سيتم تعيينه تلقائياً من Supabase
+                }));
+                
+                console.log('صفوف الميزانية للإدراج:', rows);
+                
+                // فحص إضافي للتأكد من صحة البيانات
+                const validRows = rows.filter(row => 
+                    row.category && 
+                    typeof row.category === 'string' && 
+                    typeof row.amount === 'number' && 
+                    !isNaN(row.amount)
+                );
+                
+                if (validRows.length === 0) {
+                    console.error('لا توجد بيانات صحيحة للإدراج');
+                    showNotification('لا توجد بيانات صحيحة للميزانية', 'danger');
+                    return false;
+                }
+                
+                const { error } = await supabase.from('budgets').insert(validRows);
+                
+                if (error) {
+                    console.error('خطأ في تحديث الميزانية:', error);
+                    logError('خطأ في تحديث الميزانية', error);
+                    
+                    // إذا كان الخطأ يتعلق بـ timestamp، نجرب مرة أخرى
+                    if (error.message.includes('timestamp') || error.message.includes('created_at')) {
+                        console.log('محاولة إدراج بدون أي حقول timestamp...');
+                        const { error: retryError } = await supabase.from('budgets').insert(validRows);
+                        
+                        if (retryError) {
+                            console.error('خطأ في المحاولة الثانية:', retryError);
+                            logError('خطأ في المحاولة الثانية لتحديث الميزانية', retryError);
+                            showNotification('خطأ في تحديث الميزانية في Supabase', 'danger');
+                            return false;
+                        } else {
+                            console.log('تم تحديث الميزانية بنجاح في المحاولة الثانية');
+                            return true;
+                        }
+                    }
+                    
+                    showNotification('خطأ في تحديث الميزانية في Supabase', 'danger');
+                    return false;
+                }
+                
+                console.log('تم تحديث الميزانية بنجاح');
+                return true;
+            } catch (error) {
+                console.error('خطأ في updateBudgetsSupabase:', error);
+                logError('خطأ في تحديث الميزانية', error);
+                return false;
+            }
+        }
+
+        // دالة فحص هيكل الجداول
+        async function checkTableStructure() {
+            try {
+                if (!supabase) {
+                    console.error('Supabase غير مهيأ');
+                    return false;
+                }
+                
+                console.log('فحص هيكل الجداول...');
+                
+                // محاولة إدراج سجل اختبار في جدول المعاملات
+                const testTransaction = {
+                    type: 'test',
+                    amount: 0,
+                    category: 'test',
+                    wallet: 'test',
+                    date: new Date().toISOString().split('T')[0],
+                    description: 'test'
+                };
+                
+                const { error: transactionTestError } = await supabase
+                    .from('transactions')
+                    .insert([testTransaction]);
+                
+                if (transactionTestError) {
+                    console.log('خطأ في اختبار جدول المعاملات:', transactionTestError);
+                    logError('خطأ في اختبار جدول المعاملات', transactionTestError);
+                } else {
+                    console.log('جدول المعاملات يعمل بشكل صحيح');
+                }
+                
+                // محاولة إدراج سجل اختبار في جدول الميزانية
+                // لا ندرج created_at لأن Supabase سيقوم بتعيينه تلقائياً
+                const testBudget = {
+                    category: 'test',
+                    amount: 0
+                };
+                
+                const { error: budgetTestError } = await supabase
+                    .from('budgets')
+                    .insert([testBudget]);
+                
+                if (budgetTestError) {
+                    console.log('خطأ في اختبار جدول الميزانية:', budgetTestError);
+                    logError('خطأ في اختبار جدول الميزانية', budgetTestError);
+                    
+                    // إذا كان الخطأ يتعلق بـ timestamp، نجرب بدون هذا الحقل
+                    if (budgetTestError.message.includes('timestamp') || budgetTestError.message.includes('created_at')) {
+                        console.log('محاولة إدراج بدون created_at...');
+                        
+                        // محاولة إدراج مع تحديد الأعمدة المطلوبة فقط
+                        const { error: retryError } = await supabase
+                            .from('budgets')
+                            .insert([{
+                                category: 'test_retry',
+                                amount: 0
+                            }])
+                            .select('category, amount'); // تحديد الأعمدة المطلوبة فقط
+                        
+                        if (retryError) {
+                            console.log('خطأ في المحاولة الثانية:', retryError);
+                            logError('خطأ في المحاولة الثانية لجدول الميزانية', retryError);
+                            
+                            // محاولة ثالثة - فحص هيكل الجدول أولاً
+                            console.log('فحص هيكل جدول الميزانية...');
+                            const { data: budgetStructure, error: structureError } = await supabase
+                                .from('budgets')
+                                .select('*')
+                                .limit(1);
+                            
+                            if (structureError) {
+                                console.log('خطأ في فحص هيكل الجدول:', structureError);
+                                logError('خطأ في فحص هيكل جدول الميزانية', structureError);
+                            } else if (budgetStructure && budgetStructure.length > 0) {
+                                console.log('هيكل جدول الميزانية:', Object.keys(budgetStructure[0]));
+                                console.log('مثال على السجل:', budgetStructure[0]);
+                            }
+                        } else {
+                            console.log('تم إدراج سجل اختبار بنجاح (بدون created_at)');
+                        }
+                    }
+                } else {
+                    console.log('جدول الميزانية يعمل بشكل صحيح');
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('خطأ في فحص هيكل الجداول:', error);
+                logError('خطأ في فحص هيكل الجداول', error);
+                return false;
+            }
+        }
+
+        // دالة إنشاء الجداول
+        async function createTables() {
+            try {
+                if (!supabase) {
+                    console.error('Supabase غير مهيأ');
+                    return false;
+                }
+                
+                console.log('محاولة التحقق من الجداول...');
+                
+                // اختبار جدول المعاملات - محاولة قراءة بدلاً من إدراج
+                const { data: transactionsTest, error: transactionsError } = await supabase
+                    .from('transactions')
+                    .select('*')
+                    .limit(1);
+                
+                if (transactionsError) {
+                    console.log('خطأ في الوصول لجدول المعاملات:', transactionsError);
+                    logError('خطأ في الوصول لجدول المعاملات', transactionsError);
+                    showNotification('جدول المعاملات غير موجود. يرجى إنشاؤه في Supabase أولاً.', 'danger');
+                    return false;
+                }
+                
+                console.log('جدول المعاملات متاح:', transactionsTest);
+                
+                // اختبار جدول الميزانية - محاولة قراءة بدلاً من إدراج
+                const { data: budgetsTest, error: budgetsError } = await supabase
+                    .from('budgets')
+                    .select('*')
+                    .limit(1);
+                
+                if (budgetsError) {
+                    console.log('خطأ في الوصول لجدول الميزانية:', budgetsError);
+                    logError('خطأ في الوصول لجدول الميزانية', budgetsError);
+                    showNotification('جدول الميزانية غير موجود. يرجى إنشاؤه في Supabase أولاً.', 'danger');
+                    return false;
+                }
+                
+                console.log('جدول الميزانية متاح:', budgetsTest);
+                
+                // فحص هيكل الجداول
+                await checkTableStructure();
+                
+                showNotification('تم التحقق من الجداول بنجاح - الجداول متاحة', 'success');
+                return true;
+            } catch (error) {
+                console.error('خطأ في إنشاء الجداول:', error);
+                logError('خطأ في إنشاء الجداول', error);
+                showNotification('خطأ في إنشاء الجداول', 'danger');
+                return false;
+            }
+        }
+
+        // دالة إصلاح الجداول الموجودة
+        async function fixExistingTables() {
+            try {
+                if (!supabase) {
+                    console.error('Supabase غير مهيأ');
+                    return false;
+                }
+                
+                console.log('محاولة إصلاح الجداول الموجودة...');
+                
+                // فحص هيكل الجداول أولاً
+                await inspectTableStructure();
+                
+                // محاولة إضافة عمود created_at إذا لم يكن موجوداً
+                const { error: addCreatedAtError } = await supabase.rpc('exec_sql', {
+                    sql: `
+                        ALTER TABLE budgets 
+                        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+                    `
+                });
+                
+                if (addCreatedAtError) {
+                    console.log('خطأ في إضافة عمود created_at:', addCreatedAtError);
+                    logError('خطأ في إضافة عمود created_at', addCreatedAtError);
+                } else {
+                    console.log('تم إضافة عمود created_at بنجاح');
+                }
+                
+                // محاولة إضافة عمود created_at لجدول المعاملات أيضاً
+                const { error: addCreatedAtTransactionsError } = await supabase.rpc('exec_sql', {
+                    sql: `
+                        ALTER TABLE transactions 
+                        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+                    `
+                });
+                
+                if (addCreatedAtTransactionsError) {
+                    console.log('خطأ في إضافة عمود created_at للمعاملات:', addCreatedAtTransactionsError);
+                    logError('خطأ في إضافة عمود created_at للمعاملات', addCreatedAtTransactionsError);
+                } else {
+                    console.log('تم إضافة عمود created_at للمعاملات بنجاح');
+                }
+                
+                showNotification('تم إصلاح الجداول بنجاح', 'success');
+                return true;
+            } catch (error) {
+                console.error('خطأ في إصلاح الجداول:', error);
+                logError('خطأ في إصلاح الجداول', error);
+                showNotification('خطأ في إصلاح الجداول', 'danger');
+                return false;
+            }
+        }
+
+        // تهيئة التطبيق
+        async function initializeApp() {
+            try {
+                console.log('بدء تهيئة التطبيق...');
+                
+                // تهيئة Supabase أولاً
+                const success = await initializeSupabaseClient();
+                if (!success) {
+                    showNotification('فشل في الاتصال بـ Supabase', 'danger');
+                    return;
+                }
+                
+                // جلب البيانات
+                transactions = await fetchTransactions();
+                budgets = await fetchBudgets();
+                renderBudgetMonthFilters();
+                renderBudgets();
+                
+                // عرض البيانات
+                renderTransactions();
+                renderChart();
+                updateBalance();
+                
+                console.log('تم تهيئة التطبيق بنجاح');
+                showNotification('تم تحميل البيانات بنجاح', 'success');
+            } catch (error) {
+                console.error('خطأ في تهيئة التطبيق:', error);
+                logError('خطأ في تهيئة التطبيق', error);
+                showNotification('خطأ في تهيئة التطبيق', 'danger');
+            }
+        }
+
+        // دالة إضافة معاملة جديدة
+        async function addNewTransaction() {
+            try {
+                console.log('بدء إضافة معاملة جديدة...');
+                
+                const type = document.querySelector('.tab.active')?.dataset.type || 'expense';
+                const amount = parseFloat(document.getElementById('amount')?.value);
+                const category = document.getElementById('category')?.value;
+                const wallet = document.getElementById('wallet')?.value;
+                const date = document.getElementById('date')?.value;
+                const description = document.getElementById('description')?.value || 'لا يوجد وصف';
+                
+                console.log('بيانات المعاملة:', { type, amount, category, wallet, date, description });
+                
+                // التحقق من البيانات
+                if (!amount || amount <= 0) {
+                    showNotification('يرجى إدخال مبلغ صحيح', 'danger');
+                    return;
+                }
+                
+                if (!category) {
+                    showNotification('يرجى اختيار الفئة', 'danger');
+                    return;
+                }
+                
+                if (!wallet) {
+                    showNotification('يرجى اختيار المحفظة', 'danger');
+                    return;
+                }
+                
+                if (!date) {
+                    showNotification('يرجى إدخال التاريخ', 'danger');
+                    return;
+                }
+                
+                // التحقق من Supabase
+                if (!supabase) {
+                    showNotification('جاري الاتصال بـ Supabase، يرجى الانتظار...', 'info');
+                    return;
+                }
+                
+                // التأكد من أن التاريخ في التنسيق الصحيح
+                const formattedDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                
+                const newTransaction = { 
+                    type, 
+                    amount: parseFloat(amount), 
+                    category, 
+                    wallet, 
+                    date: formattedDate, 
+                    description
+                    // لا نضيف created_at - سيتم تعيينه تلقائياً من Supabase
+                };
+                console.log('إرسال المعاملة:', newTransaction);
+                
+                const result = await addTransactionSupabase(newTransaction);
+                
+                if (result) {
+                    console.log('تم إضافة المعاملة بنجاح، تحديث الواجهة...');
+                    transactions.unshift(result);
+                    renderTransactions();
+                    updateBalance();
+                    renderChart();
+                    renderBudgets();
+                    
+                    // إعادة تعيين النموذج
+                    const form = document.getElementById('transaction-form');
+                    if (form) form.reset();
+                    
+                    const dateInput = document.getElementById('date');
+                    if (dateInput) dateInput.valueAsDate = new Date();
+                    
+                    showNotification('تمت إضافة المعاملة بنجاح!', 'success');
+                } else {
+                    console.log('فشل في إضافة المعاملة');
+                }
+            } catch (error) {
+                console.error('خطأ في إضافة المعاملة:', error);
+                logError('خطأ في إضافة المعاملة', error);
+                showNotification('خطأ غير متوقع في إضافة المعاملة', 'danger');
+            }
+        }
+
+        // دالة عرض المعاملات
+        function renderTransactions() {
+            const container = document.getElementById('transactions-list');
+            if (!container) return;
+            let filtered = transactions;
+            const now = new Date();
+            if (selectedTransactionFilter === 'income') {
+                filtered = transactions.filter(t => t.type === 'income');
+            } else if (selectedTransactionFilter === 'expense') {
+                filtered = transactions.filter(t => t.type === 'expense');
+            } else if (selectedTransactionFilter === 'last7') {
+                filtered = transactions.filter(t => {
+                    const d = new Date(t.date);
+                    return (now - d) / (1000 * 60 * 60 * 24) <= 7;
+                });
+            } else if (selectedTransactionFilter === 'month') {
+                filtered = transactions.filter(t => {
+                    const d = new Date(t.date);
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                });
+            }
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>لا توجد معاملات بعد</p>
+                        <p>أضف معاملة جديدة لتبدأ في تتبع أموالك</p>
+                    </div>
+                `;
+                return;
+            }
+            container.innerHTML = filtered.map(transaction => `
+                <div class="transaction-item" data-id="${transaction.id}">
+                    <div class="transaction-info">
+                        <div class="transaction-icon ${transaction.type === 'income' ? 'income-icon' : 'expense-icon'}">
+                            <i class="fas fa-${transaction.type === 'income' ? 'arrow-down' : 'arrow-up'}"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <h4>${transaction.description}</h4>
+                            <p>
+                                <span>${transaction.category}</span>
+                                <span>${transaction.wallet}</span>
+                                <span>${new Date(transaction.date).toLocaleDateString('en-CA')}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="transaction-amount ${transaction.type === 'income' ? 'income-amount' : 'expense-amount'}">
+                        ${transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)} ريال
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // دالة عرض الميزانية
+        function renderBudgets() {
+            const container = document.querySelector('.budget-container');
+            if (!container) return;
+            const categories = [
+                { key: 'food', name: 'طعام ومأكولات', icon: 'fas fa-utensils', color: 'progress-food' },
+                { key: 'transport', name: 'مواصلات', icon: 'fas fa-car', color: 'progress-transport' },
+                { key: 'shopping', name: 'تسوق', icon: 'fas fa-shopping-bag', color: 'progress-shopping' },
+                { key: 'bills', name: 'فواتير وخدمات', icon: 'fas fa-file-invoice', color: 'progress-bills' },
+                { key: 'entertainment', name: 'ترفيه', icon: 'fas fa-gamepad', color: 'progress-entertainment' },
+                { key: 'health', name: 'صحة ولياقة', icon: 'fas fa-heartbeat', color: 'progress-health' }
+            ];
+            // فلترة المعاملات حسب الشهر المحدد
+            let filteredTransactions = transactions;
+            if (selectedBudgetMonth) {
+                filteredTransactions = transactions.filter(t => {
+                    if (!t.date) return false;
+                    const d = new Date(t.date);
+                    const m = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2, '0')}`;
+                    return m === selectedBudgetMonth;
+                });
+            }
+            container.innerHTML = categories.map(cat => {
+                const budget = budgets[cat.key] || 0;
+                const spent = filteredTransactions
+                    .filter(t => t.type === 'expense' && t.category === cat.key)
+                    .reduce((sum, t) => sum + t.amount, 0);
+                const percentage = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+                return `
+                    <div class="budget-item">
+                        <div class="budget-header">
+                            <span class="budget-title">${cat.name}</span>
+                            <span class="budget-amount">${spent.toFixed(2)} / ${budget.toFixed(2)} ريال</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress ${cat.color}" style="width: ${percentage}%"></div>
+                        </div>
+                        <div class="budget-stats">
+                            <span>${percentage.toFixed(1)}% مستخدم</span>
+                            <span>${(budget - spent).toFixed(2)} ريال متبقي</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // دالة تحديث الرصيد
+        function updateBalance() {
+            const totalIncome = transactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + t.amount, 0);
+            
+            const totalExpense = transactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+            
+            const balance = totalIncome - totalExpense;
+            
+            document.getElementById('balance-amount').textContent = `${balance.toFixed(2)} ريال`;
+            document.getElementById('income-amount').textContent = `${totalIncome.toFixed(2)} ريال`;
+            document.getElementById('expense-amount').textContent = `${totalExpense.toFixed(2)} ريال`;
+        }
+
+        // دالة عرض الرسم البياني
+        function renderChart() {
+            const ctx = document.getElementById('expense-chart');
+            if (!ctx) return;
+            
+            const expenseData = transactions
+                .filter(t => t.type === 'expense')
+                .reduce((acc, t) => {
+                    acc[t.category] = (acc[t.category] || 0) + t.amount;
+                    return acc;
+                }, {});
+            
+            const labels = Object.keys(expenseData);
+            const data = Object.values(expenseData);
+            
+            if (window.expenseChart) {
+                window.expenseChart.destroy();
+            }
+            
+            window.expenseChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#4cc9f0', '#4361ee', '#f8961e', '#f72585', '#7209b7', '#2ec4b6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // دالة عرض الإشعارات
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                background: ${type === 'success' ? '#2ec4b6' : type === 'danger' ? '#f72585' : '#4361ee'};
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // إضافة CSS للرسوم المتحركة والعناصر المطلوبة
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            
+            .connection-status {
+                display: flex;
+                align-items: center;
+                padding: 10px 15px;
+                border-radius: 20px;
+                background: rgba(67, 97, 238, 0.1);
+                margin-bottom: 20px;
+            }
+            
+            .status-indicator {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                margin-left: 10px;
+            }
+            
+            .status-connected {
+                background: #2ec4b6;
+            }
+            
+            .status-disconnected {
+                background: #f72585;
+            }
+            
+            .status-connecting {
+                background: #f8961e;
+            }
+            
+            .connection-details {
+                flex: 1;
+            }
+            
+            .test-result {
+                display: flex;
+                align-items: center;
+                padding: 10px 15px;
+                border-radius: 10px;
+                background: #f8f9fa;
+                margin-bottom: 8px;
+            }
+            
+            .status-icon {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-left: 10px;
+                flex-shrink: 0;
+            }
+            
+            .success .status-icon {
+                background: #2ec4b6;
+                color: white;
+            }
+            
+            .error .status-icon {
+                background: #f72585;
+                color: white;
+            }
+            
+            .test-description {
+                flex: 1;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // إعداد باقي الأحداث
+        function setupEventListeners() {
+            console.log('إعداد الأحداث...');
+            
+            // أحداث التبويبات
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    console.log('تم تغيير التبويب إلى:', this.dataset.type);
+                });
+            });
+            
+            // أحداث الفلترة
+            const filterBtns = document.querySelectorAll('.filters .filter-btn');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    selectedTransactionFilter = this.dataset.filter;
+                    renderTransactions();
+                });
+            });
+            
+            // أحداث النوافذ المنبثقة
+            const editBudgetBtn = document.getElementById('edit-budget-btn');
+            const budgetModal = document.getElementById('budget-modal');
+            const closeModal = document.getElementById('close-modal');
+            
+            if (editBudgetBtn && budgetModal) {
+                editBudgetBtn.addEventListener('click', function() {
+                    budgetModal.style.display = 'flex';
+                    console.log('تم فتح نافذة تعديل الميزانية');
+                });
+            }
+            
+            if (closeModal && budgetModal) {
+                closeModal.addEventListener('click', function() {
+                    budgetModal.style.display = 'none';
+                    console.log('تم إغلاق نافذة تعديل الميزانية');
+                });
+            }
+            
+            if (budgetModal) {
+                budgetModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.style.display = 'none';
+                    }
+                });
+            }
+            
+            // أحداث الأزرار الإضافية
+            const refreshBtn = document.getElementById('refresh-btn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    console.log('تم الضغط على زر التحديث');
+                    initializeApp();
+                    showNotification('تم تحديث البيانات', 'success');
+                });
+            }
+            
+            const exportBtn = document.getElementById('export-btn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', function() {
+                    console.log('تم الضغط على زر التصدير');
+                    const dataStr = JSON.stringify(transactions, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'transactions.json';
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    showNotification('تم تصدير البيانات', 'success');
+                });
+            }
+            
+            // أحداث أزرار الاختبار
+            const testConnectionBtn = document.getElementById('test-connection-btn');
+            if (testConnectionBtn) {
+                testConnectionBtn.addEventListener('click', function() {
+                    console.log('اختبار الاتصال بـ Supabase...');
+                    if (supabase) {
+                        showNotification('الاتصال بـ Supabase يعمل بشكل صحيح', 'success');
+                    } else {
+                        showNotification('فشل في الاتصال بـ Supabase', 'danger');
+                    }
+                });
+            }
+            
+            const testNotificationBtn = document.getElementById('test-notification-btn');
+            if (testNotificationBtn) {
+                testNotificationBtn.addEventListener('click', function() {
+                    console.log('اختبار الإشعارات...');
+                    showNotification('هذا اختبار للإشعارات - يعمل بشكل صحيح!', 'success');
+                });
+            }
+            
+            const testLibraryBtn = document.getElementById('test-library-btn');
+            if (testLibraryBtn) {
+                testLibraryBtn.addEventListener('click', function() {
+                    console.log('اختبار مكتبة Supabase...');
+                    const createClientFn = window.createClient || createClient;
+                    if (typeof createClientFn !== 'undefined') {
+                        showNotification('مكتبة Supabase محملة بنجاح!', 'success');
+                        console.log('createClient متوفر:', typeof createClientFn);
+                    } else {
+                        showNotification('مكتبة Supabase غير محملة!', 'danger');
+                        console.log('createClient غير متوفر');
+                    }
+                });
+            }
+            
+            const testRLSBtn = document.getElementById('test-rls-btn');
+            if (testRLSBtn) {
+                testRLSBtn.addEventListener('click', async function() {
+                    console.log('اختبار سياسات الصلاحيات...');
+                    await testRLSPolicies();
+                });
+            }
+            
+            // إعداد زر حفظ الميزانية
+            const saveBudgetBtn = document.getElementById('save-budget-btn');
+            if (saveBudgetBtn) {
+                saveBudgetBtn.addEventListener('click', async function() {
+                    console.log('تم الضغط على زر حفظ الميزانية');
+                    const foodBudget = document.getElementById('food-budget');
+                    const transportBudget = document.getElementById('transport-budget');
+                    const shoppingBudget = document.getElementById('shopping-budget');
+                    const billsBudget = document.getElementById('bills-budget');
+                    const entertainmentBudget = document.getElementById('entertainment-budget');
+                    const healthBudget = document.getElementById('health-budget');
+                    
+                    budgets.food = parseFloat(foodBudget?.value) || 0;
+                    budgets.transport = parseFloat(transportBudget?.value) || 0;
+                    budgets.shopping = parseFloat(shoppingBudget?.value) || 0;
+                    budgets.bills = parseFloat(billsBudget?.value) || 0;
+                    budgets.entertainment = parseFloat(entertainmentBudget?.value) || 0;
+                    budgets.health = parseFloat(healthBudget?.value) || 0;
+
+                    // جرب طباعة القيم للتأكد
+                    console.log('القيم الجديدة للميزانية:', budgets);
+
+                    const success = await updateBudgetsSupabase(budgets);
+                    if (success) {
+                        renderBudgets();
+                        const budgetModal = document.getElementById('budget-modal');
+                        if (budgetModal) budgetModal.style.display = 'none';
+                        showNotification('تم تحديث الميزانية بنجاح!', 'success');
+                    } else {
+                        showNotification('فشل في تحديث الميزانية. تحقق من الصلاحيات أو من وجود الجدول.', 'danger');
+                    }
+                });
+            }
+            
+            const detailedCheckBtn = document.getElementById('detailed-check-btn');
+            if (detailedCheckBtn) {
+                detailedCheckBtn.addEventListener('click', async function() {
+                    console.log('بدء الفحص المفصل...');
+                    await detailedTableCheck();
+                    showNotification('تم الفحص المفصل، راجع console للتفاصيل الكاملة', 'info');
+                });
+            }
+            
+            console.log('تم إعداد جميع الأحداث');
+        }
+
+        // إعداد الأحداث عند تحميل الصفحة
+        let isInitialized = false;
+        document.addEventListener('DOMContentLoaded', function() {
+            if (isInitialized) {
+                console.log('تم التهيئة مسبقاً، تخطي...');
+                return;
+            }
+            isInitialized = true;
+            
+            console.log('تم تحميل الصفحة، بدء الإعداد...');
+            
+            // تعيين التاريخ الافتراضي
+            const dateInput = document.getElementById('date');
+            if (dateInput) {
+                dateInput.valueAsDate = new Date();
+                console.log('تم تعيين التاريخ الافتراضي');
+            }
+            
+            // إعداد نموذج إضافة المعاملة
+            const transactionForm = document.getElementById('transaction-form');
+            if (transactionForm) {
+                transactionForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    console.log('تم الضغط على زر إضافة معاملة');
+                    addNewTransaction();
+                });
+                console.log('تم إعداد نموذج إضافة المعاملة');
+            } else {
+                console.error('لم يتم العثور على نموذج إضافة المعاملة');
+            }
+            
+            // إعداد باقي الأحداث
+            setupEventListeners();
+            
+            // تهيئة التطبيق بعد ثانية واحدة
+            setTimeout(() => {
+                initializeApp();
+            }, 1000);
+        });
+
+        // 1. أضف في setupEventListeners بعد renderTransactions حدث النقر على .transaction-item
+        const transactionsList = document.getElementById('transactions-list');
+        if (transactionsList) {
+            transactionsList.addEventListener('click', function(e) {
+                let item = e.target;
+                while (item && !item.classList.contains('transaction-item')) {
+                    item = item.parentElement;
+                }
+                if (item && item.dataset.id) {
+                    const transactionId = item.dataset.id;
+                    const transaction = transactions.find(t => String(t.id) === String(transactionId));
+                    if (transaction) openEditTransactionModal(transaction);
+                }
+            });
+        }
+
+        // 4. أضف دالة openEditTransactionModal وحدث الحفظ
+        function openEditTransactionModal(transaction) {
+            const modal = document.getElementById('edit-transaction-modal');
+            if (!modal) return;
+            document.getElementById('edit-amount').value = transaction.amount;
+            document.getElementById('edit-category').value = transaction.category;
+            document.getElementById('edit-wallet').value = transaction.wallet;
+            document.getElementById('edit-date').value = transaction.date;
+            document.getElementById('edit-description').value = transaction.description;
+            modal.dataset.id = transaction.id;
+            modal.style.display = 'flex';
+        }
+        const closeEditModal = document.getElementById('close-edit-modal');
+        if (closeEditModal) {
+            closeEditModal.onclick = function() {
+                document.getElementById('edit-transaction-modal').style.display = 'none';
+            };
+        }
+        const editTransactionForm = document.getElementById('edit-transaction-form');
+        if (editTransactionForm) {
+            editTransactionForm.onsubmit = async function(e) {
+                e.preventDefault();
+                const modal = document.getElementById('edit-transaction-modal');
+                const id = modal.dataset.id;
+                const updated = {
+                    amount: parseFloat(document.getElementById('edit-amount').value),
+                    category: document.getElementById('edit-category').value,
+                    wallet: document.getElementById('edit-wallet').value,
+                    date: document.getElementById('edit-date').value,
+                    description: document.getElementById('edit-description').value
+                };
+                // تحديث في Supabase
+                const { error } = await supabase.from('transactions').update(updated).eq('id', id);
+                if (!error) {
+                    // تحديث في الواجهة
+                    const idx = transactions.findIndex(t => String(t.id) === String(id));
+                    if (idx !== -1) {
+                        transactions[idx] = { ...transactions[idx], ...updated };
+                        renderTransactions();
+                        updateBalance();
+                        renderChart();
+                        renderBudgets();
+                    }
+                    showNotification('تم تحديث المعاملة بنجاح', 'success');
+                    modal.style.display = 'none';
+                } else {
+                    showNotification('فشل في تحديث المعاملة', 'danger');
+                }
+            };
+        }
+
+        // 2. أضف دالة getUniqueMonthsFromTransactions
+        function getUniqueMonthsFromTransactions(transactions) {
+            const months = new Set();
+            transactions.forEach(t => {
+                if (t.date) {
+                    const d = new Date(t.date);
+                    const month = d.getMonth() + 1;
+                    const year = d.getFullYear();
+                    months.add(`${year}-${month.toString().padStart(2, '0')}`);
+                }
+            });
+            // ترتيب تنازلي (الأحدث أولاً)
+            return Array.from(months).sort((a, b) => b.localeCompare(a));
+        }
+
+        // 3. أضف دالة renderBudgetMonthFilters
+        let selectedBudgetMonth = null;
+        function renderBudgetMonthFilters() {
+            const container = document.querySelector('.budget-month-filters');
+            if (!container) return;
+            const months = getUniqueMonthsFromTransactions(transactions);
+            if (months.length === 0) {
+                container.innerHTML = '<div class="filter-btn active">لا يوجد شهور</div>';
+                selectedBudgetMonth = null;
+                return;
+            }
+            // إذا لم يتم اختيار شهر بعد، اختر الأحدث
+            if (!selectedBudgetMonth || !months.includes(selectedBudgetMonth)) {
+                selectedBudgetMonth = months[0];
+            }
+            container.innerHTML = months.map(m => {
+                const [year, month] = m.split('-');
+                const monthName = new Date(`${year}-${month}-01`).toLocaleString('ar-SA', { month: 'long', year: 'numeric', calendar: 'gregory' });
+                return `<div class="filter-btn${selectedBudgetMonth === m ? ' active' : ''}" data-budget="${m}">${monthName}</div>`;
+            }).join('');
+            // أضف الأحداث
+            container.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.onclick = function() {
+                    selectedBudgetMonth = this.dataset.budget;
+                    renderBudgetMonthFilters();
+                    renderBudgets();
+                };
+            });
+        }
+
+        // 1. أضف متغيرًا لتتبع الفلتر الحالي
+        let selectedTransactionFilter = 'all';
+
+        // تقسيم الفئات حسب النوع
+        const expenseCategories = [
+            { value: 'food', label: 'طعام ومأكولات' },
+            { value: 'transport', label: 'مواصلات' },
+            { value: 'shopping', label: 'تسوق' },
+            { value: 'bills', label: 'فواتير وخدمات' },
+            { value: 'entertainment', label: 'ترفيه' },
+            { value: 'health', label: 'صحة ولياقة' },
+            { value: 'other', label: 'أخرى' }
+        ];
+        const incomeCategories = [
+            { value: 'salary', label: 'راتب' },
+            { value: 'freelance', label: 'عمل حر' },
+            { value: 'investment', label: 'استثمار' },
+            { value: 'other', label: 'أخرى' }
+        ];
+        let customCategories = [];
+
+        function renderCategoryOptions(type) {
+            const select = document.getElementById('category');
+            if (!select) return;
+            let cats = type === 'income' ? incomeCategories : expenseCategories;
+            cats = [...cats, ...customCategories.filter(c => c.type === type)];
+            select.innerHTML = '<option value="">اختر الفئة</option>' +
+                cats.map(c => `<option value="${c.value}">${c.label}</option>`).join('') +
+                '<option value="__new__">+ إضافة فئة جديدة</option>';
+        }
+
+        // عند تغيير التبويب
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const type = this.dataset.type;
+                renderCategoryOptions(type);
+            });
+        });
+        // عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCategoryOptions('expense');
+        });
+        // عند تغيير الفئة
+        document.getElementById('category').addEventListener('change', function() {
+            if (this.value === '__new__') {
+                openAddCategoryModal();
+            }
+        });
+        // نافذة إضافة فئة جديدة
+        function openAddCategoryModal() {
+            const modal = document.getElementById('add-category-modal');
+            if (!modal) return;
+            document.getElementById('add-category-form').reset();
+            modal.style.display = 'flex';
+        }
+        function closeAddCategoryModal() {
+            const modal = document.getElementById('add-category-modal');
+            if (modal) modal.style.display = 'none';
+        }
+        document.getElementById('close-add-category-modal').onclick = closeAddCategoryModal;
+        document.getElementById('cancel-category-btn').onclick = closeAddCategoryModal;
+        // حفظ الفئة الجديدة
+        document.getElementById('add-category-form').onsubmit = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-category-name').value.trim();
+            if (!name) { showNotification('يرجى إدخال اسم الفئة', 'danger'); return; }
+            // تحديد نوع التبويب الحالي
+            const type = document.querySelector('.tab.active').dataset.type;
+            const value = 'custom_' + Date.now();
+            customCategories.push({ value, label: name, type });
+            renderCategoryOptions(type);
+            document.getElementById('category').value = value;
+            closeAddCategoryModal();
+        };
+
+    </script>
+</body>
+</html>
